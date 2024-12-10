@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-module.exports = async (req, res) => {
+module.exports = (req, res) => {
     const filePath = req.url === '/' ? './index.html' : `.${req.url}`;
     const extname = path.extname(filePath);
     let contentType = 'text/html';
@@ -26,15 +26,18 @@ module.exports = async (req, res) => {
             contentType = 'text/html';
     }
 
-    try {
-        const content = fs.readFileSync(filePath);
-        res.setHeader('Content-Type', contentType);
-        res.status(200).send(content);
-    } catch (err) {
-        if (err.code === 'ENOENT') {
-            res.status(404).send('<h1>404 Not Found</h1>');
+    fs.readFile(filePath, (err, content) => {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                res.writeHead(404, { 'Content-Type': 'text/html' });
+                res.end('<h1>404 Not Found</h1>');
+            } else {
+                res.writeHead(500);
+                res.end(`Server Error: ${err.code}`);
+            }
         } else {
-            res.status(500).send(`Server Error: ${err.code}`);
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(content);
         }
-    }
+    });
 };
